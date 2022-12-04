@@ -69,10 +69,15 @@ async fn update_color(temp: &f64, client: &OpenRGB<TcpStream>) {
     };
 
     for controller_id in 0..num_controllers {
-        match client.update_leds(controller_id, Vec::from([Color{ r, g, b}])).await {
-            Ok(()) => (),
-            Err(error) => panic!("Couldn't set controller {}: {:?}", controller_id, error)
-        };
+        if let Ok(controller) = client.get_controller(controller_id).await {
+            let num_leds = controller.leds.len();
+            match client.update_leds(controller_id, vec![Color{ r, g, b}, num_leds]).await {
+                Ok(()) => (),
+                Err(error) => panic!("Couldn't set controller {}: {:?}", controller_id, error)
+            };
+        } else {
+            println!("Couldn't fetch leds on controller {}", controller_id);
+        }
         println!("Controller {} set to {}", controller_id, Color{r, g, b})
     }
 }
