@@ -1,14 +1,15 @@
 use tokio::{net::TcpStream, time::sleep};
 
 use std::time::Duration;
+use std::cmp::max;
 use openrgb::{OpenRGB, data::Color};
 use lm_sensors::{Value::TemperatureInput, feature::Kind::Temperature, chip::SharedChip};
 
 pub static UPPER_TEMP: f64 = 80.0;
 pub static LOWER_TEMP: f64 = 32.0;
 
-pub static BASE_C_VALUE: u8 = 10;
-pub static MAX_C_VALUE: u8 = 50;
+pub static BASE_C_VALUE: u8 = 20;
+pub static MAX_C_VALUE: u8 = 30;
 
 #[tokio::main]
 async fn main() {   
@@ -52,14 +53,16 @@ async fn main() {
 async fn update_color(temp: &f64, client: &OpenRGB<TcpStream>) {
 
     let mut r: u8 = BASE_C_VALUE;
+    let mut g: u8 = BASE_C_VALUE;
+    let b: u8 = 0;
+
     let temp_scale: f64 = (temp - LOWER_TEMP) / (UPPER_TEMP - LOWER_TEMP);
 
     if *temp > LOWER_TEMP {
-        r = (temp_scale * (MAX_C_VALUE - BASE_C_VALUE) as f64) as u8 + BASE_C_VALUE;
+        r = max((temp_scale * (MAX_C_VALUE - BASE_C_VALUE) as f64) as u8 + BASE_C_VALUE, MAX_C_VALUE);
+        g = (1 / temp_scale * BASE_C_VALUE) as u8;
     }
 
-    let g: u8 = BASE_C_VALUE;
-    let b: u8 = 0;
 
     let num_controllers = match client.get_controller_count().await {
         Ok(res) => {
