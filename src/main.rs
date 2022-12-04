@@ -1,52 +1,62 @@
-extern crate systemstat;
-
 use tokio::{net::TcpStream, time::sleep};
 
 use std::time::Duration;
-use systemstat::{System, Platform};
 use openrgb::{OpenRGB, data::Color};
 
-pub static UPPER_TEMP: f32 = 85.0;
-pub static LOWER_TEMP: f32 = 32.0;
+pub static UPPER_TEMP: f64 = 85.0;
+pub static LOWER_TEMP: f64 = 32.0;
 
 pub static BASE_C_VALUE: u8 = 10;
 pub static MAX_C_VALUE: u8 = 20;
 
 #[tokio::main]
-async fn main() {
-    let sys = System::new();
+async fn main() {   
+    let sensors = match lm_sensors::Initializer::default().initialize() {
+        Ok(res) => res,
+        Err(error) => panic!("Couldn't start lm_sensors: {}", error),
+    };
     let client = match OpenRGB::connect().await {
         Ok(res) => res,
         Err(error) => panic!("Couldn't connect to OpenRgb server: {:?}", error),
     };
-    let mut temp = 0.0;
+    let mut temp: f64 = 0.0;
 
     client.set_name("Rust Temp Sync").await.unwrap();
 
     println!("Connected using protocol version {}", client.get_protocol_version());
 
     loop {
-        match sys.cpu_temp() {
-            Ok(cpu_temp) => {
-                if cpu_temp != temp {
-                    println!("\nCPU temp: {}", cpu_temp);
-                    update_color(&temp, &client).await;
-                    temp = cpu_temp;
+        let mut temp_max = 0;
+        for chip in sensors.chip_iter(None) {
+            for feature in chip.feature_iter() {
+                if matches!(feature.kind(), lm_sensors::feature::Kind.Tempurature) {
+                    for sub_feature in feature.sub_feature_iter() {
+                        if let Ok(value) = sub_feature.value() {
+                            match temp_max {
+                                lm_sensors::Value.TemperatureInput(temp) => {
+                                    if value > temp_max {
+                                        temp_max = max;
+                                    }
+                                },
+                            }
+                            temp_max = value;
+                        }
+                    }
                 }
-            },
-            Err(x) => println!("\nCPU temp: {}", x)
+            }
         }
+        update_color(temp, &client);
         sleep(Duration::from_millis(500)).await;
     }
 }
 
-async fn update_color(temp: &f32, client: &OpenRGB<TcpStream>) {
+async fn update_color(temp: &f64, client: &OpenRGB<TcpStream>) {
 
     let mut r: u8 = BASE_C_VALUE;
-    let temp_scale: f32 = (temp - LOWER_TEMP) / (UPPER_TEMP - LOWER_TEMP);
+    let temp_scale: f64 = (temp - LOWER_TEMP) / (UPPER_TEMP - LOWER_TEMP);
 
     if *temp > LOWER_TEMP {
-        r = (temp_scale * (MAX_C_VALUE - BASE_C_VALUE) as f32) as u8 + BASE_C_VALUE;
+        r = (temp_scale * (MAX_C_VALUE - BASE_C_VALUE) as f64) as u8 + BASE_C_VALUE;
     }
 
     let g: u8 = BASE_C_VALUE;
