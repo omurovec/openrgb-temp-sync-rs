@@ -2,6 +2,7 @@ use tokio::{net::TcpStream, time::sleep};
 
 use std::time::Duration;
 use openrgb::{OpenRGB, data::Color};
+use lm_sensors::{Value::TemperatureInput, feature::Kind::Temperature, chip::SharedChip};
 
 pub static UPPER_TEMP: f64 = 80.0;
 pub static LOWER_TEMP: f64 = 32.0;
@@ -71,7 +72,7 @@ async fn update_color(temp: &f64, client: &OpenRGB<TcpStream>) {
     for controller_id in 0..num_controllers {
         if let Ok(controller) = client.get_controller(controller_id).await {
             let num_leds = controller.leds.len();
-            match client.update_leds(controller_id, vec![Color{ r, g, b}, num_leds]).await {
+            match client.update_leds(controller_id, vec![Color{r, g, b}; num_leds]).await {
                 Ok(()) => (),
                 Err(error) => panic!("Couldn't set controller {}: {:?}", controller_id, error)
             };
