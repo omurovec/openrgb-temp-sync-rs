@@ -28,8 +28,8 @@ async fn main() {
     loop {
         match sys.cpu_temp() {
             Ok(cpu_temp) => {
-                println!("\nCPU temp: {}", cpu_temp);
                 if cpu_temp != temp {
+                    println!("\new CPU temp: {}", cpu_temp);
                     update_color(&temp, &client).await;
                     temp = cpu_temp;
                 }
@@ -54,7 +54,7 @@ async fn update_color(temp: &f32, client: &OpenRGB<TcpStream>) {
 
     let num_controllers = match client.get_controller_count().await {
         Ok(res) => {
-            print!("Found {} controllers", res);
+            print!("Updating {} controllers", res);
             res
         },
         Err(error) => panic!("Couldn't read number of controllers from OpenRgb server: {:?}", error),
