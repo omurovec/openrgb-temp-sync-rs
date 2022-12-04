@@ -60,7 +60,7 @@ async fn update_color(temp: &f64, client: &OpenRGB<TcpStream>) {
 
     if *temp > LOWER_TEMP {
         r = max((temp_scale * (MAX_C_VALUE - BASE_C_VALUE) as f64) as u8 + BASE_C_VALUE, MAX_C_VALUE);
-        g = (1.0 / temp_scale * BASE_C_VALUE as f64) as u8;
+        g = (1.0 - temp_scale * BASE_C_VALUE as f64) as u8;
     }
 
 
