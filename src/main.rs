@@ -40,7 +40,6 @@ async fn main() {
     }
 }
 
-#[tokio::main]
 async fn update_color(temp: &f32, client: &OpenRGB<TcpStream>) {
 
     let mut r: u8 = 0;
