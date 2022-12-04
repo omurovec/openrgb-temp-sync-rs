@@ -44,7 +44,7 @@ async fn main() {
                 }
             }
         }
-        update_color(&temp_max, &client);
+        update_color(&temp_max, &client).await;
         sleep(Duration::from_millis(500)).await;
     }
 }
