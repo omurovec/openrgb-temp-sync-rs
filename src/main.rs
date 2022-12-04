@@ -1,7 +1,8 @@
 extern crate systemstat;
 
-use tokio::net::TcpStream;
+use tokio::{net::TcpStream, time::sleep};
 
+use std::time::Duration;
 use systemstat::{System, Platform};
 use openrgb::{OpenRGB, data::Color};
 
@@ -14,7 +15,10 @@ pub static MAX_C_VALUE: u8 = 20;
 #[tokio::main]
 async fn main() {
     let sys = System::new();
-    let client = OpenRGB::connect().await.unwrap();
+    let client = match OpenRGB::connect().await {
+        Ok(res) => res,
+        Err(error) => panic!("Couldn't connect to OpenRgb server: {:?}", error),
+    };
     let mut temp = 0.0;
 
     client.set_name("Rust Temp Sync").await.unwrap();
@@ -32,7 +36,7 @@ async fn main() {
             },
             Err(x) => println!("\nCPU temp: {}", x)
         }
-
+        sleep(Duration::from_millis(500)).await;
     }
 }
 
@@ -49,9 +53,16 @@ async fn update_color(temp: &f32, client: &OpenRGB<TcpStream>) {
     let g: u8 = BASE_G_VALUE;
     let b: u8 = 0;
 
-    let num_controllers = client.get_controller_count().await.unwrap();
+    let num_controllers = match client.get_controller_count().await {
+        Ok(res) => res,
+        Err(error) => panic!("Couldn't read number of controllers from OpenRgb server: {:?}", error),
+    };
 
     for controller_id in 0..num_controllers {
-        client.update_leds(controller_id, Vec::from([Color{ r, g, b}])).await.unwrap();
+        match client.update_leds(controller_id, Vec::from([Color{ r, g, b}])).await {
+            Ok(()) => (),
+            Err(error) => panic!("Couldn't set controller {}: {:?}", controller_id, error)
+        };
+        print!("Controller {} set to {}", controller_id, Color{r, g, b})
     }
 }
