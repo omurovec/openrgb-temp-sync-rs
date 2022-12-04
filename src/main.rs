@@ -3,11 +3,11 @@ use tokio::{net::TcpStream, time::sleep};
 use std::time::Duration;
 use openrgb::{OpenRGB, data::Color};
 
-pub static UPPER_TEMP: f64 = 85.0;
+pub static UPPER_TEMP: f64 = 80.0;
 pub static LOWER_TEMP: f64 = 32.0;
 
 pub static BASE_C_VALUE: u8 = 10;
-pub static MAX_C_VALUE: u8 = 20;
+pub static MAX_C_VALUE: u8 = 50;
 
 #[tokio::main]
 async fn main() {   
@@ -19,33 +19,31 @@ async fn main() {
         Ok(res) => res,
         Err(error) => panic!("Couldn't connect to OpenRgb server: {:?}", error),
     };
-    let mut temp: f64 = 0.0;
 
     client.set_name("Rust Temp Sync").await.unwrap();
 
     println!("Connected using protocol version {}", client.get_protocol_version());
 
     loop {
-        let mut temp_max = 0;
+        let mut temp_max: f64 = 0.0;
         for chip in sensors.chip_iter(None) {
             for feature in chip.feature_iter() {
-                if matches!(feature.kind(), lm_sensors::feature::Kind::Tempurature) {
-                    for sub_feature in feature.sub_feature_iter() {
-                        if let Ok(value) = sub_feature.value() {
-                            match temp_max {
-                                lm_sensors::Value::TemperatureInput(temp) => {
-                                    if temp > temp_max {
-                                        temp_max = max;
-                                    }
-                                },
+                 match feature.kind() {
+                    Some(Temperature) => {
+                        for sub_feature in feature.sub_feature_iter() {
+                            if let Ok(TemperatureInput(value)) = sub_feature.value() {
+                                if value > temp_max {
+                                    temp_max = value;
+                                }
                             }
-                            temp_max = value;
                         }
-                    }
+                    },
+                    Some(_) => (),
+                    None => ()
                 }
             }
         }
-        update_color(temp, &client);
+        update_color(&temp_max, &client);
         sleep(Duration::from_millis(500)).await;
     }
 }
