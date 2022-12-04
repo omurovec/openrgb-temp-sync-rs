@@ -46,7 +46,7 @@ async fn update_color(temp: &f32, client: &OpenRGB<TcpStream>) {
     let temp_scale: f32 = (temp - LOWER_TEMP) / (UPPER_TEMP - LOWER_TEMP);
 
     if *temp > LOWER_TEMP {
-        r = (temp_scale * MAX_C_VALUE as f32) as u8;
+        r = (temp_scale * (MAX_C_VALUE - BASE_C_VALUE) as f32) as u8 + BASE_C_VALUE;
     }
 
     let g: u8 = BASE_C_VALUE;
