@@ -29,12 +29,12 @@ async fn main() {
         let mut temp_max = 0;
         for chip in sensors.chip_iter(None) {
             for feature in chip.feature_iter() {
-                if matches!(feature.kind(), lm_sensors::feature::Kind.Tempurature) {
+                if matches!(feature.kind(), lm_sensors::feature::Kind::Tempurature) {
                     for sub_feature in feature.sub_feature_iter() {
                         if let Ok(value) = sub_feature.value() {
                             match temp_max {
-                                lm_sensors::Value.TemperatureInput(temp) => {
-                                    if value > temp_max {
+                                lm_sensors::Value::TemperatureInput(temp) => {
+                                    if temp > temp_max {
                                         temp_max = max;
                                     }
                                 },
