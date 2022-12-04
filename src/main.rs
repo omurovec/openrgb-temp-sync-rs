@@ -9,7 +9,7 @@ use openrgb::{OpenRGB, data::Color};
 pub static UPPER_TEMP: f32 = 85.0;
 pub static LOWER_TEMP: f32 = 32.0;
 
-pub static BASE_G_VALUE: u8 = 10;
+pub static BASE_C_VALUE: u8 = 10;
 pub static MAX_C_VALUE: u8 = 20;
 
 #[tokio::main]
@@ -29,7 +29,7 @@ async fn main() {
         match sys.cpu_temp() {
             Ok(cpu_temp) => {
                 if cpu_temp != temp {
-                    println!("\new CPU temp: {}", cpu_temp);
+                    println!("\nCPU temp: {}", cpu_temp);
                     update_color(&temp, &client).await;
                     temp = cpu_temp;
                 }
@@ -42,19 +42,19 @@ async fn main() {
 
 async fn update_color(temp: &f32, client: &OpenRGB<TcpStream>) {
 
-    let mut r: u8 = 0;
+    let mut r: u8 = BASE_C_VALUE;
     let temp_scale: f32 = (temp - LOWER_TEMP) / (UPPER_TEMP - LOWER_TEMP);
 
     if *temp > LOWER_TEMP {
         r = (temp_scale * MAX_C_VALUE as f32) as u8;
     }
 
-    let g: u8 = BASE_G_VALUE;
+    let g: u8 = BASE_C_VALUE;
     let b: u8 = 0;
 
     let num_controllers = match client.get_controller_count().await {
         Ok(res) => {
-            print!("Updating {} controllers", res);
+            println!("Found {} controllers", res);
             res
         },
         Err(error) => panic!("Couldn't read number of controllers from OpenRgb server: {:?}", error),
@@ -65,6 +65,6 @@ async fn update_color(temp: &f32, client: &OpenRGB<TcpStream>) {
             Ok(()) => (),
             Err(error) => panic!("Couldn't set controller {}: {:?}", controller_id, error)
         };
-        print!("Controller {} set to {}", controller_id, Color{r, g, b})
+        println!("Controller {} set to {}", controller_id, Color{r, g, b})
     }
 }
